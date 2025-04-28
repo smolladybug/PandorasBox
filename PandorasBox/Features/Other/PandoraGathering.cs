@@ -199,6 +199,17 @@ namespace PandorasBox.Features.Other
             public bool GatherChanceUp = false;
 
             public int GPGatherChanceUp = 100;
+
+            public bool UseBoon10 = false;
+
+            public int GPBoon10 = 50;
+
+            public bool UseBoon30 = false;
+
+            public int GPBoon30 = 100;
+
+            public int Boon30Limit = 89;
+            public int Boon10Limit = 99;
         }
 
         public Configs Config { get; private set; }
@@ -400,6 +411,20 @@ namespace PandorasBox.Features.Other
                             SaveConfig(Config);
                         }
                         ImGui.NextColumn();
+                        if (ImGui.Checkbox($"Use {Svc.Data.GetExcelSheet<Action>(language).GetRow(21178).Name.ToString()}", ref Config.UseBoon10))
+                        {
+                            Config.UseGivingLand = false;
+                            Config.UseTwelvesBounty = false;
+                            SaveConfig(Config);
+                        }
+                        ImGui.NextColumn();
+                        if (ImGui.Checkbox($"Use {Svc.Data.GetExcelSheet<Action>(language).GetRow(25590).Name.ToString()}", ref Config.UseBoon30))
+                        {
+                            Config.UseGivingLand = false;
+                            Config.UseTwelvesBounty = false;
+                            SaveConfig(Config);
+                        }
+                        ImGui.NextColumn();
                         if (ImGui.Checkbox($"Use {Svc.Data.GetExcelSheet<Action>(language).GetRow(21204).Name.ToString()}", ref Config.UseTidings))
                         {
                             Config.UseGivingLand = false;
@@ -422,6 +447,20 @@ namespace PandorasBox.Features.Other
                         }
                         ImGui.NextColumn();
                         if (ImGui.Checkbox($"Use {Svc.Data.GetExcelSheet<Action>(language).GetRow(241).Name.ToString()}", ref Config.Use500GPYield))
+                        {
+                            Config.UseGivingLand = false;
+                            Config.UseTwelvesBounty = false;
+                            SaveConfig(Config);
+                        }
+                        ImGui.NextColumn();
+                        if (ImGui.Checkbox($"Use {Svc.Data.GetExcelSheet<Action>(language).GetRow(21177).Name.ToString()}", ref Config.UseBoon10))
+                        {
+                            Config.UseGivingLand = false;
+                            Config.UseTwelvesBounty = false;
+                            SaveConfig(Config);
+                        }
+                        ImGui.NextColumn();
+                        if (ImGui.Checkbox($"Use {Svc.Data.GetExcelSheet<Action>(language).GetRow(25589).Name.ToString()}", ref Config.UseBoon30))
                         {
                             Config.UseGivingLand = false;
                             Config.UseTwelvesBounty = false;
@@ -636,6 +675,20 @@ namespace PandorasBox.Features.Other
 
                         HiddenRevealed = false;
 
+                        if (Config.GPBoon30 <= Svc.ClientState.LocalPlayer!.CurrentGp && Config.UseBoon30 && ((boonChances.TryGetValue(lastGatheredIndex, out var val1) && val1 > 0 && val1 <= Config.Boon30Limit) || boonChances.Where(x => x.Value != 0).All(x => x.Value <= Config.Boon30Limit)))
+                        {
+                            TaskManager.Enqueue(() => UseBoon30(), "UseBoon30");
+                            TaskManager.Enqueue(() => !Svc.Condition[ConditionFlag.Gathering42]);
+                        }
+
+                        if (Config.GPBoon10 <= Svc.ClientState.LocalPlayer!.CurrentGp && Config.UseBoon10 && ((boonChances.TryGetValue(lastGatheredIndex, out var val2) && val2 > 0 && val2 <= Config.Boon10Limit) || boonChances.Where(x => x.Value != 0).All(x => x.Value <= Config.Boon10Limit)))
+                        {
+                            TaskManager.Enqueue(() => UseBoon10(), "UseBoon10");
+                            TaskManager.Enqueue(() => !Svc.Condition[ConditionFlag.Gathering42]);
+                        }
+
+                        // TODO: update boon chances before continuing with tidings check
+
                         if (Config.GPTidings <= Svc.ClientState.LocalPlayer!.CurrentGp && Config.UseTidings && (boonChances.TryGetValue(lastGatheredIndex, out var val) && val >= Config.GatherersBoon || boonChances.Where(x => x.Value != 0).All(x => x.Value >= Config.GatherersBoon)))
                         {
                             TaskManager.Enqueue(() => UseTidings(), "UseTidings");
@@ -782,9 +835,48 @@ namespace PandorasBox.Features.Other
             if (Config.UseTidings)
             {
                 ImGui.PushItemWidth(300);
-                if (ImGui.SliderInt("Min. Gatherer's Boon% For Tidings", ref Config.GatherersBoon, 1, 100))
+                if (ImGui.SliderInt("Min. Gatherer's Boon% For Tidings###Boon1", ref Config.GatherersBoon, 1, 100))
                     SaveConfig(Config);
             }
+
+            if (ImGui.Checkbox($"Use {Svc.Data.GetExcelSheet<Action>(language).GetRow(21177).Name.ToString()} / {Svc.Data.GetExcelSheet<Action>(language).GetRow(21178).Name.ToString()}", ref Config.UseBoon10))
+            {
+                SaveConfig(Config);
+            }
+
+            if (Config.UseBoon10)
+            {
+                ImGui.PushItemWidth(300);
+                if (ImGui.SliderInt("Min. GP###MinGP91", ref Config.GPBoon10, 50, 1000))
+                    SaveConfig(Config);
+            }
+
+            if (Config.UseBoon10)
+            {
+                ImGui.PushItemWidth(300);
+                if (ImGui.SliderInt("Max. Gatherer's Boon%###Boon3", ref Config.Boon10Limit, 1, 99))
+                    SaveConfig(Config);
+            }
+
+            if (ImGui.Checkbox($"Use {Svc.Data.GetExcelSheet<Action>(language).GetRow(25589).Name.ToString()} / {Svc.Data.GetExcelSheet<Action>(language).GetRow(25590).Name.ToString()}", ref Config.UseBoon30))
+            {
+                SaveConfig(Config);
+            }
+
+            if (Config.UseBoon30)
+            {
+                ImGui.PushItemWidth(300);
+                if (ImGui.SliderInt("Min. GP###MinGP90", ref Config.GPBoon30, 100, 1000))
+                    SaveConfig(Config);
+            }
+
+            if (Config.UseBoon30)
+            {
+                ImGui.PushItemWidth(300);
+                if (ImGui.SliderInt("Max. Gatherer's Boon%###Boon2", ref Config.Boon30Limit, 1, 99))
+                    SaveConfig(Config);
+            }
+
 
             if (ImGui.Checkbox($"Use {Svc.Data.GetExcelSheet<Action>(language).GetRow(215).Name.ToString()} / {Svc.Data.GetExcelSheet<Action>(language).GetRow(232).Name.ToString()}", ref Config.UseSolidReason))
             {
@@ -935,6 +1027,61 @@ namespace PandorasBox.Features.Other
             }
 
             return true;
+        }
+
+        private void UseBoon30()
+        {
+            uint statusId = 759;
+            uint actionIdBot = 25590;
+            uint actionIdMin = 25589;
+
+            if (Svc.ClientState.LocalPlayer.StatusList.Any(x => x.StatusId == statusId))
+                return;
+
+            switch (Svc.ClientState.LocalPlayer.ClassJob.RowId)
+            {
+                case 17:
+                    if (ActionManager.Instance()->GetActionStatus(ActionType.Action, actionIdBot) == 0)
+                    {
+                        ActionManager.Instance()->UseAction(ActionType.Action, actionIdBot);
+                        TaskManager.EnqueueImmediate(() => Svc.ClientState.LocalPlayer.StatusList.Any(x => x.StatusId == statusId));
+                    }
+                    break;
+                case 16:
+                    if (ActionManager.Instance()->GetActionStatus(ActionType.Action, actionIdMin) == 0)
+                    {
+                        ActionManager.Instance()->UseAction(ActionType.Action, actionIdMin);
+                        TaskManager.EnqueueImmediate(() => Svc.ClientState.LocalPlayer.StatusList.Any(x => x.StatusId == statusId));
+                    }
+                    break;
+            }
+        }
+        private void UseBoon10()
+        {
+            uint statusId = 2666;
+            uint actionIdBot = 21178;
+            uint actionIdMin = 21177;
+            
+            if (Svc.ClientState.LocalPlayer.StatusList.Any(x => x.StatusId == statusId))
+                return;
+
+            switch (Svc.ClientState.LocalPlayer.ClassJob.RowId)
+            {
+                case 17:
+                    if (ActionManager.Instance()->GetActionStatus(ActionType.Action, actionIdBot) == 0)
+                    {
+                        ActionManager.Instance()->UseAction(ActionType.Action, actionIdBot);
+                        TaskManager.EnqueueImmediate(() => Svc.ClientState.LocalPlayer.StatusList.Any(x => x.StatusId == statusId));
+                    }
+                    break;
+                case 16:
+                    if (ActionManager.Instance()->GetActionStatus(ActionType.Action, actionIdMin) == 0)
+                    {
+                        ActionManager.Instance()->UseAction(ActionType.Action, actionIdMin);
+                        TaskManager.EnqueueImmediate(() => Svc.ClientState.LocalPlayer.StatusList.Any(x => x.StatusId == statusId));
+                    }
+                    break;
+            }
         }
 
         private bool? UseGivingLand()
