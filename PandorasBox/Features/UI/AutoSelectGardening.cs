@@ -8,9 +8,10 @@ using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Lumina.Excel.Sheets;
 using PandorasBox.FeaturesSetup;
+using PandorasBox.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -66,9 +67,9 @@ namespace PandorasBox.Features.UI
             if (Config.IncludeFertilzing && (Svc.GameGui.GetAddonByName("InventoryExpansion") != IntPtr.Zero || Svc.GameGui.GetAddonByName("Inventory") != IntPtr.Zero || Svc.GameGui.GetAddonByName("InventoryLarge") != IntPtr.Zero) && !Fertilized)
             {
                 if (Config.SelectedFertilizer == 0) goto SoilSeeds;
-                var addon1 = (AtkUnitBase*)Svc.GameGui.GetAddonByName("InventoryExpansion");
-                var addon2 = (AtkUnitBase*)Svc.GameGui.GetAddonByName("Inventory");
-                var addon3 = (AtkUnitBase*)Svc.GameGui.GetAddonByName("InventoryLarge");
+                var addon1 = (AtkUnitBase*)Svc.GameGui.GetAddonByName("InventoryExpansion").Address;
+                var addon2 = (AtkUnitBase*)Svc.GameGui.GetAddonByName("Inventory").Address;
+                var addon3 = (AtkUnitBase*)Svc.GameGui.GetAddonByName("InventoryLarge").Address;
 
                 var addon = addon1->IsVisible ? addon1 : addon2->IsVisible ? addon2 : addon3;
 
@@ -77,7 +78,7 @@ namespace PandorasBox.Features.UI
                     if (addon->AtkValuesCount <= 5) return;
                     var fertilizeText = addon->AtkValues[5];
                     var text = MemoryHelper.ReadSeStringNullTerminated(new IntPtr(fertilizeText.String));
-                    if (text.ExtractText() == AddonText[6417].Text.ExtractText())
+                    if (text.GetText() == AddonText[6417].Text.ExtractText())
                     {
                         var im = InventoryManager.Instance();
                         var inv1 = im->GetInventoryContainer(InventoryType.Inventory1);
@@ -99,14 +100,14 @@ namespace PandorasBox.Features.UI
                                     var item = cont->GetInventorySlot(i);
 
                                     var ag = AgentInventoryContext.Instance();
-                                    ag->OpenForItemSlot(cont->Type, i, AgentModule.Instance()->GetAgentByInternalId(AgentId.Inventory)->GetAddonId());
-                                    var contextMenu = (AtkUnitBase*)Svc.GameGui.GetAddonByName("ContextMenu", 1);
+                                    ag->OpenForItemSlot(cont->Type, i, 0,AgentModule.Instance()->GetAgentByInternalId(AgentId.Inventory)->GetAddonId()); //test what a4 arg is
+                                    var contextMenu = (AtkUnitBase*)Svc.GameGui.GetAddonByName("ContextMenu", 1).Address;
                                     if (contextMenu == null) return;
                                     for (int p = 0; p <= contextMenu->AtkValuesCount; p++)
                                     {
                                         if (ag->EventIds[p] == 7)
                                         {
-                                            Callback.Fire(contextMenu, true, 0, p - 7, 0, 0, 0);
+                                           ECommons.Automation.Callback.Fire(contextMenu, true, 0, p - 7, 0, 0, 0);
                                             Fertilized = true;
                                             return;
                                         }
@@ -220,7 +221,7 @@ namespace PandorasBox.Features.UI
                 }
 
             ClickItem:
-                var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("HousingGardening");
+                var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("HousingGardening").Address;
 
                 if (!TaskManager.IsBusy)
                 {
@@ -228,7 +229,7 @@ namespace PandorasBox.Features.UI
                     {
                         if (SlotsFilled.Contains(1)) TaskManager.Abort();
                         if (SlotsFilled.Contains(1)) return;
-                        TaskManager.DelayNext($"Gardening1", 100);
+                        TaskManager.EnqueueDelay(100);
                         TaskManager.Enqueue(() => TryClickItem(addon, 1, soilIndex));
                     }
 
@@ -236,15 +237,15 @@ namespace PandorasBox.Features.UI
                     {
                         if (SlotsFilled.Contains(2)) TaskManager.Abort();
                         if (SlotsFilled.Contains(2)) return;
-                        TaskManager.DelayNext($"Gardening2", 100);
+                        TaskManager.EnqueueDelay(100);
                         TaskManager.Enqueue(() => TryClickItem(addon, 2, seedIndex));
                     }
 
                     if (Config.AutoConfirm)
                     {
-                        TaskManager.DelayNext($"Confirming", 100);
-                        TaskManager.Enqueue(() => Callback.Fire(addon, false, 0, 0, 0, 0, 0), 300, false);
-                        TaskManager.Enqueue(() => ConfirmYesNo(), 300, false);
+                        TaskManager.EnqueueDelay(100);
+                        TaskManager.EnqueueWithTimeout(() => ECommons.Automation.Callback.Fire(addon, false, 0, 0, 0, 0, 0), 300, false);
+                        TaskManager.EnqueueWithTimeout(() => ConfirmYesNo(), 300, false);
                     }
                 }
 
@@ -261,7 +262,7 @@ namespace PandorasBox.Features.UI
         {
             if (SlotsFilled.Contains(i)) return true;
 
-            var contextMenu = (AtkUnitBase*)Svc.GameGui.GetAddonByName("ContextIconMenu", 1);
+            var contextMenu = (AtkUnitBase*)Svc.GameGui.GetAddonByName("ContextIconMenu", 1).Address;
 
             if (contextMenu is null || !contextMenu->IsVisible)
             {
@@ -339,7 +340,7 @@ namespace PandorasBox.Features.UI
 
         private bool CloseItemDetail()
         {
-            var itemDetail = (AtkUnitBase*)Svc.GameGui.GetAddonByName("ItemDetail", 1);
+            var itemDetail = (AtkUnitBase*)Svc.GameGui.GetAddonByName("ItemDetail", 1).Address;
             if (itemDetail is null || !itemDetail->IsVisible) return false;
 
             var values = stackalloc AtkValue[1];
@@ -356,7 +357,7 @@ namespace PandorasBox.Features.UI
         internal static bool ConfirmYesNo()
         {
             if (Svc.Condition[Dalamud.Game.ClientState.Conditions.ConditionFlag.Occupied39]) return false;
-            var hg = (AtkUnitBase*)Svc.GameGui.GetAddonByName("HousingGardening");
+            var hg = (AtkUnitBase*)Svc.GameGui.GetAddonByName("HousingGardening").Address;
             if (hg == null) return false;
 
             if (hg->IsVisible && TryGetAddonByName<AddonSelectYesno>("SelectYesno", out var addon) &&

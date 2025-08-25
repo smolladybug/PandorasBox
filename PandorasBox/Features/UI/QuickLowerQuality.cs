@@ -28,14 +28,17 @@ namespace PandorasBox.Features.UI
 
         private void PostSetup(AddonEvent type, AddonArgs args)
         {
-            var addon = (AtkUnitBase*)args.Addon;
+            var addon = (AtkUnitBase*)args.Addon.Address;
             var seString = MemoryHelper.ReadSeStringNullTerminated(new IntPtr(addon->AtkValues[0].String));
             if (seString.Payloads.Count < 3 || seString.Payloads[2] is not TextPayload payload2)
             {
                 return;
             }
             var rawText = payload2.Text!.Trim();
-            var trimmedText = rawText.Remove(rawText.LastIndexOf(' ')).TrimEnd();
+            var lastSpace = rawText.LastIndexOf(' ');
+            var trimmedText = lastSpace >= 0
+                ? rawText.Remove(lastSpace).TrimEnd()
+                : rawText.TrimEnd();
             var sheetText = Svc.Data.GetExcelSheet<Addon>()!.First(x => x.RowId == 155).Text.ToDalamudString().Payloads[2].ToString().Trim();
 
             if (sheetText == trimmedText)

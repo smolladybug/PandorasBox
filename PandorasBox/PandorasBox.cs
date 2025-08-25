@@ -58,7 +58,6 @@ public class PandorasBox : IDalamudPlugin
         Svc.PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
         PandoraIPC.Init();
         Events.Init();
-        AFKTimer.Init();
         provider.LoadFeatures();
         FeatureProviders.Add(provider);
     }
@@ -83,7 +82,6 @@ public class PandorasBox : IDalamudPlugin
         FeatureProviders.Clear();
         PandoraIPC.Dispose();
         Events.Disable();
-        AFKTimer.Dispose();
     }
 
     private void OnCommand(string command, string args)

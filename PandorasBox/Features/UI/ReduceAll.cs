@@ -2,7 +2,7 @@ using ECommons.DalamudServices;
 using ECommons.ImGuiMethods;
 using ECommons.Throttlers;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using PandorasBox.FeaturesSetup;
 using PandorasBox.Helpers;
 using PandorasBox.UI;
@@ -37,7 +37,7 @@ namespace PandorasBox.Features.UI
         {
             if (Svc.GameGui.GetAddonByName("PurifyItemSelector", 1) != IntPtr.Zero)
             {
-                var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("PurifyItemSelector", 1);
+                var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("PurifyItemSelector", 1).Address;
                 if (addon == null)
                     return;
 
@@ -119,17 +119,16 @@ namespace PandorasBox.Features.UI
 
         private void TryReduceAll()
         {
-            var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("PurifyItemSelector", 1);
+            var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("PurifyItemSelector", 1).Address;
             if (addon != null)
             {
                 var length = addon->UldManager.NodeList[3]->GetAsAtkComponentList()->ListLength;
 
                 for (var i = 1; i <= length; i++)
                 {
-                    TaskManager.EnqueueImmediate(() => SelectFirstItem(addon));
-                    TaskManager.EnqueueImmediate(() => ConfirmDialog());
+                    TaskManager.InsertMulti([new(() => SelectFirstItem(addon)), new(ConfirmDialog)]);
                 }
-                TaskManager.EnqueueImmediate(() => { Reducing = false; return true; });
+                TaskManager.Insert(() => { Reducing = false; return true; });
             }
         }
 
@@ -138,7 +137,7 @@ namespace PandorasBox.Features.UI
             if (Svc.Condition[Dalamud.Game.ClientState.Conditions.ConditionFlag.Occupied39]) return false;
             if (Svc.GameGui.GetAddonByName("PurifyResult",1) != IntPtr.Zero)
             {
-                var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("PurifyResult",1);
+                var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("PurifyResult",1).Address;
                 addon->Close(true);
                 return true;
             }
@@ -149,8 +148,7 @@ namespace PandorasBox.Features.UI
         private bool? SelectFirstItem(AtkUnitBase* addon)
         {
             if (Svc.Condition[Dalamud.Game.ClientState.Conditions.ConditionFlag.Occupied39]) return false;
-            TaskManager.EnqueueImmediate(() => EzThrottler.Throttle("Generating", 1000));
-            TaskManager.EnqueueImmediate(() => EzThrottler.Check("Generating"));
+            TaskManager.InsertMulti([new(() => EzThrottler.Throttle("Generating", 1000)), new(() => EzThrottler.Check("Generating"))]);
 
             var values = stackalloc AtkValue[2];
             values[0] = new()
@@ -172,10 +170,10 @@ namespace PandorasBox.Features.UI
         public override void Disable()
         {
             P.Ws.RemoveWindow(Overlay);
-            Overlay = null;
+            Overlay = null!;
             if (Svc.GameGui.GetAddonByName("PurifyItemSelector", 1) != IntPtr.Zero)
             {
-                var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("PurifyItemSelector", 1);
+                var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("PurifyItemSelector", 1).Address;
                 var node = addon->UldManager.NodeList[5];
 
                 node->ToggleVisibility(true);

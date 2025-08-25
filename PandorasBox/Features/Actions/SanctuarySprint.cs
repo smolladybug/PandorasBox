@@ -1,8 +1,6 @@
 using ECommons.DalamudServices;
-using ECommons.GameHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.MJI;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using PandorasBox.FeaturesSetup;
 using System.Linq;
 
@@ -41,7 +39,7 @@ namespace PandorasBox.Features
 
         private void RunFeature(IFramework framework)
         {
-            if (MJIManager.Instance()->IsPlayerInSanctuary == 0)
+            if (!MJIManager.Instance()->IsPlayerInSanctuary)
                 return;
 
             if (IsRpWalking() && !Config.RPWalk)

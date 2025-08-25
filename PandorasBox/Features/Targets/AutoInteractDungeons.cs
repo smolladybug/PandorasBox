@@ -4,7 +4,7 @@ using ECommons.DalamudServices;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Lumina.Excel.Sheets;
 using PandorasBox.FeaturesSetup;
 using PandorasBox.Helpers;
@@ -66,7 +66,7 @@ namespace PandorasBox.Features.Targets
             }
 
             if (Config.InteractMethod is 2 or 3)
-                TaskManager.Enqueue(() => { if (!Svc.Condition[ConditionFlag.OccupiedInQuestEvent]) TargetSystem.Instance()->OpenObjectInteraction(baseObj); }, 100);
+                TaskManager.EnqueueWithTimeout(() => { if (!Svc.Condition[ConditionFlag.OccupiedInQuestEvent]) TargetSystem.Instance()->OpenObjectInteraction(baseObj); }, 100);
         }
 
         public override void Enable()
@@ -80,7 +80,7 @@ namespace PandorasBox.Features.Targets
         private void TriggerCooldown(ConditionFlag flag, bool value)
         {
             if ((flag == ConditionFlag.OccupiedInQuestEvent) && !value)
-                TaskManager.DelayNext("InteractCooldown", (int)(Config.Cooldown * 1000));
+                TaskManager.EnqueueDelay((int)(Config.Cooldown * 1000));
         }
 
         private void RunFeature(IFramework framework)
@@ -113,7 +113,7 @@ namespace PandorasBox.Features.Targets
 
                         if (!TargetSystem.Instance()->IsObjectInViewRange(baseObj) || !TargetSystem.Instance()->IsObjectOnScreen(baseObj)) return;
 
-                        TaskManager.DelayNext($"InteractDung{baseObj->BaseId}", (int)(Config.ThrottleF * 1000));
+                        TaskManager.EnqueueDelay((int)(Config.ThrottleF * 1000));
                         TaskManager.Enqueue(() => TryInteract(baseObj));
                         return;
                     }
@@ -127,13 +127,13 @@ namespace PandorasBox.Features.Targets
                     if (!TargetSystem.Instance()->IsObjectInViewRange(baseObj)) continue;
 
                     if (Svc.Data.GetExcelSheet<EObj>().TryGetFirst(x => x.RowId == baseObj->BaseId, out var sheetItem))
-                        if ((sheetItem.SgbPath.Value.SgbPath.ToString().Contains("bgcommon/world/lvd/shared/for_vfx/sgvf_w_lvd_b0005.sgb") || Exits.Contains(sheetItem.RowId)) && Config.ExcludeExit)
+                        if (Config.ExcludeExit && (sheetItem.SgbPath.ValueNullable?.SgbPath.ToString().Contains("bgcommon/world/lvd/shared/for_vfx/sgvf_w_lvd_b0005.sgb") == true || Exits.Contains(sheetItem.RowId)))
                             continue;
 
                     if (!TaskManager.IsBusy)
                     {
                         if (Svc.Condition[ConditionFlag.OccupiedInQuestEvent]) continue;
-                        TaskManager.DelayNext($"InteractDung{baseObj->BaseId}", (int)(Config.ThrottleF * 1000));
+                        TaskManager.EnqueueDelay((int)(Config.ThrottleF * 1000));
                         TaskManager.Enqueue(() => TryInteract(baseObj));
                     }
 

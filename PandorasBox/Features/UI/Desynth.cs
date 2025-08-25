@@ -5,7 +5,7 @@ using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Lumina.Excel.Sheets;
 using PandorasBox.FeaturesSetup;
 using PandorasBox.Helpers;
@@ -52,7 +52,7 @@ namespace PandorasBox.Features.UI
         private nint UpdateItemDetour(nint a1, ulong index, nint a3, ulong a4)
         {
             var retval = updateItemHook.Original(a1, index, a3, a4);
-            var addon = (AddonSalvageItemSelector*)Svc.GameGui.GetAddonByName("SalvageItemSelector", 1);
+            var addon = (AddonSalvageItemSelector*)Svc.GameGui.GetAddonByName("SalvageItemSelector", 1).Address;
             if (addon != null)
             {
                 if (index > addon->ItemCount)
@@ -84,7 +84,7 @@ namespace PandorasBox.Features.UI
         {
             try
             {
-                var addon = (AddonSalvageItemSelector*)Svc.GameGui.GetAddonByName("SalvageItemSelector", 1);
+                var addon = (AddonSalvageItemSelector*)Svc.GameGui.GetAddonByName("SalvageItemSelector", 1).Address;
                 if (addon != null && addon->AtkUnitBase.IsVisible)
                 {
                     var node = addon->AtkUnitBase.UldManager.NodeList[12];
@@ -124,9 +124,8 @@ namespace PandorasBox.Features.UI
                             if (ImGui.Button($"Desynth All"))
                             {
                                 Desynthing = true;
-                                TaskManager.Enqueue(() => YesAlready.Lock());
-                                TaskManager.Enqueue(() => TryDesynthAll());
-                                TaskManager.Enqueue(() => YesAlready.Unlock());
+                                TaskManager.Enqueue(YesAlready.Lock);
+                                TaskManager.Enqueue(TryDesynthAll);
                             }
                         }
                         else
@@ -135,7 +134,7 @@ namespace PandorasBox.Features.UI
                             {
                                 Desynthing = false;
                                 TaskManager.Abort();
-                                TaskManager.Enqueue(() => YesAlready.Unlock());
+                                TaskManager.Enqueue(YesAlready.Unlock);
                             }
                         }
                     }
@@ -149,7 +148,7 @@ namespace PandorasBox.Features.UI
                 {
                     Desynthing = false;
                     TaskManager.Abort();
-                    TaskManager.Enqueue(() => YesAlready.Unlock());
+                    TaskManager.Enqueue(YesAlready.Unlock);
                 }
             }
             catch
@@ -164,15 +163,16 @@ namespace PandorasBox.Features.UI
             {
                 if (addon->ItemCount > 0)
                 {
-                    TaskManager.Enqueue(() => DesynthFirst(), "Desynthing");
-                    TaskManager.Enqueue(() => ConfirmDesynth(), 200, "Confirm Desynth");
-                    TaskManager.Enqueue(() => CloseResults(), 3000, "Close Results");
-                    TaskManager.DelayNext("WaitForDelay", 400);
-                    TaskManager.Enqueue(() => TryDesynthAll(), "Repeat Loop");
+                    TaskManager.Enqueue(DesynthFirst, "Desynthing");
+                    TaskManager.EnqueueWithTimeout(ConfirmDesynth, 2000, "Confirm Desynth");
+                    TaskManager.EnqueueWithTimeout(CloseResults, 9000, "Close Results");
+                    TaskManager.EnqueueDelay(500);
+                    TaskManager.Enqueue(TryDesynthAll, "Repeat Loop");
                 }
                 else
                 {
-                    TaskManager.Enqueue(() => Desynthing = false);
+                    Desynthing = false;
+                    YesAlready.Unlock();
                 }
             }
         }
@@ -180,7 +180,7 @@ namespace PandorasBox.Features.UI
         private bool? CloseResults()
         {
             if (Svc.Condition[Dalamud.Game.ClientState.Conditions.ConditionFlag.Occupied]) return false;
-            var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("SalvageResult", 1);
+            var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("SalvageResult", 1).Address;
             if (addon == null || !addon->IsVisible) return false;
             addon->Close(true);
             return true;
@@ -189,18 +189,18 @@ namespace PandorasBox.Features.UI
         private bool? ConfirmDesynth()
         {
             if (Svc.Condition[Dalamud.Game.ClientState.Conditions.ConditionFlag.Occupied]) return false;
-            var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("SalvageDialog", 1);
+            var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("SalvageDialog", 1).Address;
             if (addon == null || !addon->IsVisible) return false;
-            Callback.Fire(addon, false, 0, false);
-            return true;
+            ECommons.Automation.Callback.Fire(addon, false, 0, false);
+            return Svc.Condition[Dalamud.Game.ClientState.Conditions.ConditionFlag.Occupied39];
         }
 
         private static bool? DesynthFirst()
         {
             if (Svc.Condition[Dalamud.Game.ClientState.Conditions.ConditionFlag.Occupied]) return false;
-            var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("SalvageItemSelector", 1);
+            var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("SalvageItemSelector", 1).Address;
             if (addon == null) return null;
-            Callback.Fire(addon, false, 12, 0);
+            ECommons.Automation.Callback.Fire(addon, false, 12, 0);
             return true;
         }
 

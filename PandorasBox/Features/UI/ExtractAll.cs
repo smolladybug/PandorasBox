@@ -4,7 +4,7 @@ using ECommons.Throttlers;
 using ECommons.UIHelpers.AddonMasterImplementations;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using PandorasBox.FeaturesSetup;
 using PandorasBox.Helpers;
 using PandorasBox.UI;
@@ -41,7 +41,7 @@ namespace PandorasBox.Features.UI
             {
                 if (Svc.GameGui.GetAddonByName("Materialize", 1) != IntPtr.Zero)
                 {
-                    var ptr = (AtkUnitBase*)Svc.GameGui.GetAddonByName("Materialize", 1);
+                    var ptr = (AtkUnitBase*)Svc.GameGui.GetAddonByName("Materialize", 1).Address;
                     if (!ptr->IsVisible)
                         return;
 
@@ -85,9 +85,7 @@ namespace PandorasBox.Features.UI
                     {
                         if (ImGui.Button($"Extracting. Click to abort.###AbortExtract", size))
                         {
-                            Extracting = false;
-                            TaskManager.Abort();
-                            TaskManager.Enqueue(() => YesAlready.Unlock());
+                            Abort();
                         }
                     }
 
@@ -100,15 +98,20 @@ namespace PandorasBox.Features.UI
                 }
                 else
                 {
-                    Extracting = false;
-                    TaskManager.Abort();
-                    TaskManager.Enqueue(() => YesAlready.Unlock());
+                    Abort();
                 }
             }
             catch (Exception e)
             {
                 Svc.Log.Debug(e, "ExtractAllException");
             }
+        }
+
+        private void Abort()
+        {
+            Extracting = false;
+            TaskManager.Abort();
+            TaskManager.Enqueue(() => YesAlready.Unlock());
         }
 
         private void TryExtractAll()
@@ -178,7 +181,7 @@ namespace PandorasBox.Features.UI
             var spiritBondedItems6 = Array.Empty<InventoryItem>();
             var spiritBondedItems7 = Array.Empty<InventoryItem>();
 
-            TaskManager.Enqueue(() => YesAlready.Lock());
+            TaskManager.Enqueue(() => YesAlready.Lock(), "LockYesAlready");
             //Container 1
             foreach (var container in container1)
             {
@@ -197,10 +200,10 @@ namespace PandorasBox.Features.UI
             {
                 for (var i = 1; i <= spiritBondedItems1.Length; i++)
                 {
-                    TaskManager.Enqueue(() => SwitchTabs(1));
-                    TaskManager.Enqueue(() => GenerateAndFireCallback());
-                    TaskManager.Enqueue(() => IsMateriaMenuDialogOpen());
-                    TaskManager.Enqueue(() => ConfirmMateriaDialog());
+                    TaskManager.Enqueue(() => SwitchTabs(1), "SwitchTabs");
+                    TaskManager.Enqueue(() => GenerateAndFireCallback(), "GenerateAndFireCallback");
+                    //TaskManager.Enqueue(() => IsMateriaMenuDialogOpen(), "IsMateriaMenuDialogOpen");
+                    TaskManager.Enqueue(() => ConfirmMateriaDialog(), "ConfirmMateriaDialog");
                 }
             }
 
@@ -223,10 +226,10 @@ namespace PandorasBox.Features.UI
 
                 for (var i = 1; i <= spiritBondedItems2.Length; i++)
                 {
-                    TaskManager.Enqueue(() => SwitchTabs(2));
-                    TaskManager.Enqueue(() => GenerateAndFireCallback());
-                    //TaskManager.Enqueue(() => IsMateriaMenuDialogOpen());
-                    TaskManager.Enqueue(() => ConfirmMateriaDialog());
+                    TaskManager.Enqueue(() => SwitchTabs(2), "SwitchTabs");
+                    TaskManager.Enqueue(() => GenerateAndFireCallback(), "GenerateAndFireCallback");
+                    //TaskManager.Enqueue(() => IsMateriaMenuDialogOpen(), "IsMateriaMenuDialogOpen");
+                    TaskManager.Enqueue(() => ConfirmMateriaDialog(), "ConfirmMateriaDialog");
                 }
             }
 
@@ -249,10 +252,10 @@ namespace PandorasBox.Features.UI
 
                 for (var i = 1; i <= spiritBondedItems3.Length; i++)
                 {
-                    TaskManager.Enqueue(() => SwitchTabs(3));
-                    TaskManager.Enqueue(() => GenerateAndFireCallback());
-                    //TaskManager.Enqueue(() => IsMateriaMenuDialogOpen());
-                    TaskManager.Enqueue(() => ConfirmMateriaDialog());
+                    TaskManager.Enqueue(() => SwitchTabs(3), "SwitchTabs");
+                    TaskManager.Enqueue(() => GenerateAndFireCallback(), "GenerateAndFireCallback");
+                    //TaskManager.Enqueue(() => IsMateriaMenuDialogOpen(), "IsMateriaMenuDialogOpen");
+                    TaskManager.Enqueue(() => ConfirmMateriaDialog(), "ConfirmMateriaDialog");
                 }
             }
 
@@ -274,10 +277,10 @@ namespace PandorasBox.Features.UI
             {
                 for (var i = 1; i <= spiritBondedItems4.Length; i++)
                 {
-                    TaskManager.Enqueue(() => SwitchTabs(4));
-                    TaskManager.Enqueue(() => GenerateAndFireCallback());
-                    //TaskManager.Enqueue(() => IsMateriaMenuDialogOpen());
-                    TaskManager.Enqueue(() => ConfirmMateriaDialog());
+                    TaskManager.Enqueue(() => SwitchTabs(4), "SwitchTabs");
+                    TaskManager.Enqueue(() => GenerateAndFireCallback(), "GenerateAndFireCallback");
+                    //TaskManager.Enqueue(() => IsMateriaMenuDialogOpen(), "IsMateriaMenuDialogOpen");
+                    TaskManager.Enqueue(() => ConfirmMateriaDialog(), "ConfirmMateriaDialog");
                 }
             }
 
@@ -299,10 +302,10 @@ namespace PandorasBox.Features.UI
             {
                 for (var i = 1; i <= spiritBondedItems5.Length; i++)
                 {
-                    TaskManager.Enqueue(() => SwitchTabs(5));
-                    TaskManager.Enqueue(() => GenerateAndFireCallback());
-                    //TaskManager.Enqueue(() => IsMateriaMenuDialogOpen());
-                    TaskManager.Enqueue(() => ConfirmMateriaDialog());
+                    TaskManager.Enqueue(() => SwitchTabs(5), "SwitchTabs");
+                    TaskManager.Enqueue(() => GenerateAndFireCallback(), "GenerateAndFireCallback");
+                    //TaskManager.Enqueue(() => IsMateriaMenuDialogOpen(), "IsMateriaMenuDialogOpen");
+                    TaskManager.Enqueue(() => ConfirmMateriaDialog(), "ConfirmMateriaDialog");
                 }
             }
 
@@ -324,10 +327,10 @@ namespace PandorasBox.Features.UI
             {
                 for (var i = 1; i <= spiritBondedItems6.Length; i++)
                 {
-                    TaskManager.Enqueue(() => SwitchTabs(6));
-                    TaskManager.Enqueue(() => GenerateAndFireCallback());
-                    //TaskManager.Enqueue(() => IsMateriaMenuDialogOpen());
-                    TaskManager.Enqueue(() => ConfirmMateriaDialog());
+                    TaskManager.Enqueue(() => SwitchTabs(6), "SwitchTabs");
+                    TaskManager.Enqueue(() => GenerateAndFireCallback(), "GenerateAndFireCallback");
+                    //TaskManager.Enqueue(() => IsMateriaMenuDialogOpen(), "IsMateriaMenuDialogOpen");
+                    TaskManager.Enqueue(() => ConfirmMateriaDialog(), "ConfirmMateriaDialog");
                 }
             }
 
@@ -349,14 +352,13 @@ namespace PandorasBox.Features.UI
             {
                 for (var i = 1; i <= spiritBondedItems7.Length; i++)
                 {
-                    TaskManager.Enqueue(() => SwitchTabs(7));
-                    TaskManager.Enqueue(() => GenerateAndFireCallback());
-                    //TaskManager.Enqueue(() => IsMateriaMenuDialogOpen());
-                    TaskManager.Enqueue(() => ConfirmMateriaDialog());
+                    TaskManager.Enqueue(() => SwitchTabs(7), "SwitchTabs");
+                    TaskManager.Enqueue(() => GenerateAndFireCallback(), "GenerateAndFireCallback");
+                    //TaskManager.Enqueue(() => IsMateriaMenuDialogOpen(), "IsMateriaMenuDialogOpen");
+                    TaskManager.Enqueue(() => ConfirmMateriaDialog(), "ConfirmMateriaDialog");
                 }
             }
-            TaskManager.Enqueue(() => { Extracting = false; return true; });
-            TaskManager.Enqueue(() => YesAlready.Unlock());
+            TaskManager.Enqueue(() => Abort());
         }
 
         public static unsafe void CloseMateriaMenu()
@@ -371,12 +373,11 @@ namespace PandorasBox.Features.UI
         public unsafe bool? SwitchTabs(int section)
         {
             if (Svc.Condition[Dalamud.Game.ClientState.Conditions.ConditionFlag.Occupied39]) return false;
-            TaskManager.EnqueueImmediate(() => EzThrottler.Throttle("Switching", 300));
-            TaskManager.EnqueueImmediate(() => EzThrottler.Check("Switching"));
+            TaskManager.InsertMulti([new(() => EzThrottler.Throttle("Switching", 300)), new(() => EzThrottler.Check("Switching"))]);
 
             if (Svc.GameGui.GetAddonByName("Materialize", 1) != IntPtr.Zero)
             {
-                var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("Materialize", 1);
+                var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("Materialize", 1).Address;
                 var values = stackalloc AtkValue[2];
                 values[0] = new AtkValue()
                 {
@@ -410,15 +411,13 @@ namespace PandorasBox.Features.UI
                 if (materializePTR == IntPtr.Zero)
                     return true;
 
-                var materalizeWindow = (AtkUnitBase*)materializePTR;
+                var materalizeWindow = (AtkUnitBase*)materializePTR.Address;
                 if (materalizeWindow == null)
                     return true;
 
                 new AddonMaster.MaterializeDialog(materializePTR).Materialize();
 
-                TaskManager.EnqueueImmediate(() => EzThrottler.Throttle("Extracting", 100));
-                TaskManager.EnqueueImmediate(() => EzThrottler.Check("Extracting"));
-
+                TaskManager.InsertMulti([new(() => EzThrottler.Throttle("Extracting", 100), "ExtractingThrottle"), new(() => EzThrottler.Check("Extracting"), "ExtractingCheck")]);
                 return true;
 
             }
@@ -433,8 +432,7 @@ namespace PandorasBox.Features.UI
         public bool? GenerateAndFireCallback()
         {
             if (Svc.Condition[Dalamud.Game.ClientState.Conditions.ConditionFlag.Occupied39]) return false;
-            TaskManager.EnqueueImmediate(() => EzThrottler.Throttle("Generating", 100));
-            TaskManager.EnqueueImmediate(() => EzThrottler.Check("Generating"));
+            TaskManager.InsertMulti([new(() => EzThrottler.Throttle("Generating", 100), "Generating"), new(() => EzThrottler.Check("Generating"), "GeneratingCheck")]);
 
             var values = stackalloc AtkValue[2];
             values[0] = new()
@@ -448,7 +446,7 @@ namespace PandorasBox.Features.UI
                 UInt = 0,
             };
 
-            var ptr = (AtkUnitBase*)Svc.GameGui.GetAddonByName("Materialize", 1);
+            var ptr = (AtkUnitBase*)Svc.GameGui.GetAddonByName("Materialize", 1).Address;
             if (ptr == null) return true;
 
             ptr->FireCallback(2, values);
@@ -458,10 +456,10 @@ namespace PandorasBox.Features.UI
         public override void Disable()
         {
             P.Ws.RemoveWindow(OverlayWindow);
-            OverlayWindow = null;
+            OverlayWindow = null!;
             if (Svc.GameGui.GetAddonByName("Materialize", 1) != IntPtr.Zero)
             {
-                var ptr = (AtkUnitBase*)Svc.GameGui.GetAddonByName("Materialize", 1);
+                var ptr = (AtkUnitBase*)Svc.GameGui.GetAddonByName("Materialize", 1).Address;
 
                 var node = ptr->UldManager.NodeList[2];
 

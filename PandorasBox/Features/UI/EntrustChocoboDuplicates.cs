@@ -1,24 +1,19 @@
-using Dalamud.Hooking;
 using ECommons.Automation;
 using ECommons.DalamudServices;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using FFXIVClientStructs.STD;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using PandorasBox.FeaturesSetup;
 using PandorasBox.Helpers;
 using PandorasBox.UI;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using Lumina.Excel.Sheets;
 using static ECommons.UIHelpers.AddonMasterImplementations.AddonMaster;
 using static FFXIVClientStructs.FFXIV.Component.GUI.AtkEventDispatcher;
 
@@ -47,7 +42,7 @@ namespace PandorasBox.Features.UI
         }
         public override void Draw()
         {
-            var addon = (AddonInventoryBuddy*)Svc.GameGui.GetAddonByName("InventoryBuddy");
+            var addon = (AddonInventoryBuddy*)Svc.GameGui.GetAddonByName("InventoryBuddy").Address;
             if (addon != null && addon->AtkUnitBase.IsVisible)
             {
                 var node = addon->AtkUnitBase.UldManager.NodeList[3];
@@ -97,10 +92,14 @@ namespace PandorasBox.Features.UI
                                     if (saddleItem->ItemId == 0)
                                         continue;
 
+                                    var saddleItemData = Svc.Data.GetExcelSheet<Item>().GetRow(saddleItem->ItemId);
+                                    if (saddleItemData.IsUnique)
+                                        continue;
+                                    
                                     if (saddleItem->ItemId == item->ItemId)
                                     {
                                         uint total = (uint)(saddleItem->Quantity + item->Quantity);
-                                        TaskManager.DelayNext(200);
+                                        TaskManager.EnqueueDelay(200);
                                         TaskManager.Enqueue(() =>
                                         {
                                             FireInventoryMenu(inventory, item, 56);
@@ -117,22 +116,21 @@ namespace PandorasBox.Features.UI
                 ImGui.GetFont().Scale = oldSize;
                 ImGui.PopFont();
                 ImGui.PopStyleColor();
-
             }
         }
 
         private static void FireInventoryMenu(InventoryType inventory, InventoryItem* item, int eventId)
         {
             var ag = AgentInventoryContext.Instance();
-            ag->OpenForItemSlot(inventory, item->Slot, AgentModule.Instance()->GetAgentByInternalId(AgentId.Inventory)->GetAddonId());
-            var contextMenu = (AtkUnitBase*)Svc.GameGui.GetAddonByName("ContextMenu", 1);
+            ag->OpenForItemSlot(inventory, item->Slot,0, AgentModule.Instance()->GetAgentByInternalId(AgentId.Inventory)->GetAddonId());
+            var contextMenu = (AtkUnitBase*)Svc.GameGui.GetAddonByName("ContextMenu", 1).Address;
             if (contextMenu == null) return;
 
             for (int e = 0; e <= contextMenu->AtkValuesCount; e++)
             {
                 if (ag->EventIds[e] == eventId)
                 {
-                    Callback.Fire(contextMenu, true, 0, e - 7, 0, 0, 0);
+                   ECommons.Automation.Callback.Fire(contextMenu, true, 0, e - 7, 0, 0, 0);
                     return;
                 }
             }

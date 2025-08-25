@@ -5,7 +5,7 @@ using Dalamud.Interface.Components;
 using Dalamud.Memory;
 using Dalamud.Plugin;
 using ECommons;
-using ECommons.Automation.LegacyTaskManager;
+using ECommons.Automation.NeoTaskManager;
 using ECommons.DalamudServices;
 using ECommons.EzHookManager;
 using ECommons.GameHelpers;
@@ -15,9 +15,8 @@ using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Lumina.Excel.Sheets;
 using Newtonsoft.Json;
 using PandorasBox.FeaturesSetup;
@@ -28,6 +27,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using static FFXIVClientStructs.FFXIV.Client.Game.ActionManager;
+using System.Diagnostics;
 
 namespace PandorasBox.Features
 {
@@ -57,17 +57,24 @@ namespace PandorasBox.Features
 
         public abstract FeatureType FeatureType { get; }
 
+        protected Stopwatch AFKTimer { get; private set; } = new Stopwatch();
+        protected bool UseAFKTimer { get; set; } = false;
+
+        protected bool IsAFK(int minutes = 5)
+        {
+            if (!UseAFKTimer) return false;
+            return AFKTimer.Elapsed.TotalMinutes >= minutes;
+        }
+
         public void InterfaceSetup(PandorasBox plugin, IDalamudPluginInterface pluginInterface, Configuration config, FeatureProvider fp)
         {
             this.config = config;
             this.Provider = fp;
-            this.TaskManager = new();
+            this.TaskManager = new(new() { TimeoutSilently = true, ShowDebug = !UseAFKTimer });
         }
 
         public virtual void Setup()
         {
-            TaskManager!.TimeoutSilently = true;
-            TaskManager.ShowDebug = false;
             Ready = true;
         }
 
@@ -75,12 +82,26 @@ namespace PandorasBox.Features
         {
             Svc.Log.Debug($"Enabling {Name}");
             Enabled = true;
+            if (UseAFKTimer)
+                Svc.Framework.Update += UpdateTimer;
         }
 
         public virtual void Disable()
         {
             TaskManager!.Abort();
             Enabled = false;
+            Svc.Framework.Update -= UpdateTimer;
+        }
+
+        private void UpdateTimer(IFramework framework)
+        {
+            if ((Player.Available && Player.IsMoving) || Svc.Condition[Dalamud.Game.ClientState.Conditions.ConditionFlag.InCombat])
+            {
+                if (!AFKTimer.IsRunning)
+                    AFKTimer.Restart();
+            }
+            else
+                AFKTimer.Reset();
         }
 
         public virtual void Dispose()
@@ -331,30 +352,11 @@ namespace PandorasBox.Features
             }
         }
 
+        protected void Log(string msg) => Svc.Log.Debug($"[{Name}] {msg}");
+
         public unsafe bool IsRpWalking()
         {
-            if (Svc.ClientState.LocalPlayer == null) return false;
-            //var atkArrayDataHolder = FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->GetUiModule()->GetRaptureAtkModule()->AtkModule.AtkArrayDataHolder;
-            //if (atkArrayDataHolder.NumberArrays[72]->IntArray[6] == 1)
-            //    return true;
-            //else
-            //    return false;
-
-            if (Svc.GameGui.GetAddonByName("_DTR") == IntPtr.Zero) return false;
-
-            var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("_DTR");
-            if (addon->UldManager.NodeListCount < 9) return false;
-
-            try
-            {
-                var isVisible = addon->GetNodeById(10)->IsVisible();
-                return isVisible;
-            }
-            catch (Exception ex)
-            {
-                ex.Log();
-                return false;
-            }
+            return Control.Instance()->IsWalking;
         }
 
         internal static unsafe int GetInventoryFreeSlotCount()
@@ -445,7 +447,7 @@ namespace PandorasBox.Features
             {
                 try
                 {
-                    var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("SelectYesno", i);
+                    var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("SelectYesno", i).Address;
                     if (addon == null) return null;
                     if (GenericHelpers.IsAddonReady(addon))
                     {
@@ -473,7 +475,7 @@ namespace PandorasBox.Features
             {
                 try
                 {
-                    var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("SelectYesno", i);
+                    var addon = (AtkUnitBase*)Svc.GameGui.GetAddonByName("SelectYesno", i).Address;
                     if (addon == null) return null;
                     if (GenericHelpers.IsAddonReady(addon))
                     {

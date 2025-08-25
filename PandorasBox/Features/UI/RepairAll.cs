@@ -4,7 +4,7 @@ using ECommons.ImGuiMethods;
 using ECommons.UIHelpers.AddonMasterImplementations;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Lumina.Excel.Sheets;
 using PandorasBox.FeaturesSetup;
 using PandorasBox.Helpers;
@@ -127,11 +127,13 @@ namespace PandorasBox.Features
             for (var i = 1; i <= 7; i++)
             {
                 var val = i;
-                TaskManager.EnqueueImmediate(() => Repair(), 300, false);
-                TaskManager.EnqueueImmediate(() => ConfirmYesNo(), 300, false);
-                TaskManager.EnqueueImmediate(() => SwitchSection());
+                TaskManager.BeginStack();
+                TaskManager.EnqueueWithTimeout(() => Repair(), 300, false);
+                TaskManager.EnqueueWithTimeout(() => ConfirmYesNo(), 300, false);
+                TaskManager.Enqueue(SwitchSection);
+                TaskManager.InsertStack();
             }
-            TaskManager.EnqueueImmediate(() => { Repairing = false; return true; });
+            TaskManager.Insert(() => { Repairing = false; return true; });
         }
 
         private bool SwitchSection()
@@ -213,7 +215,7 @@ namespace PandorasBox.Features
             P.Ws.RemoveWindow(window);
             if (Svc.GameGui.GetAddonByName("Repair", 1) != IntPtr.Zero)
             {
-                var ptr = (AtkUnitBase*)Svc.GameGui.GetAddonByName("Repair", 1);
+                var ptr = (AtkUnitBase*)Svc.GameGui.GetAddonByName("Repair", 1).Address;
 
                 var node = ptr->UldManager.NodeList[24];
 
