@@ -679,13 +679,13 @@ namespace PandorasBox.Features.Other
                         if (Config.GPBoon30 <= Svc.ClientState.LocalPlayer!.CurrentGp && Config.UseBoon30 && ((boonChances.TryGetValue(lastGatheredIndex, out var val1) && val1 > 0 && val1 <= Config.Boon30Limit) || boonChances.Where(x => x.Value != 0).All(x => x.Value <= Config.Boon30Limit)))
                         {
                             TaskManager.Enqueue(() => UseBoon30(), "UseBoon30");
-                            TaskManager.Enqueue(() => !Svc.Condition[ConditionFlag.Gathering42]);
+                            TaskManager.Enqueue(() => !Svc.Condition[ConditionFlag.ExecutingGatheringAction]);
                         }
 
                         if (Config.GPBoon10 <= Svc.ClientState.LocalPlayer!.CurrentGp && Config.UseBoon10 && ((boonChances.TryGetValue(lastGatheredIndex, out var val2) && val2 > 0 && val2 <= Config.Boon10Limit) || boonChances.Where(x => x.Value != 0).All(x => x.Value <= Config.Boon10Limit)))
                         {
                             TaskManager.Enqueue(() => UseBoon10(), "UseBoon10");
-                            TaskManager.Enqueue(() => !Svc.Condition[ConditionFlag.Gathering42]);
+                            TaskManager.Enqueue(() => !Svc.Condition[ConditionFlag.ExecutingGatheringAction]);
                         }
 
                         // TODO: update boon chances before continuing with tidings check
@@ -1045,14 +1045,14 @@ namespace PandorasBox.Features.Other
                     if (ActionManager.Instance()->GetActionStatus(ActionType.Action, actionIdBot) == 0)
                     {
                         ActionManager.Instance()->UseAction(ActionType.Action, actionIdBot);
-                        TaskManager.EnqueueImmediate(() => Svc.ClientState.LocalPlayer.StatusList.Any(x => x.StatusId == statusId));
+                        TaskManager.Insert(() => Svc.ClientState.LocalPlayer.StatusList.Any(x => x.StatusId == statusId));
                     }
                     break;
                 case 16:
                     if (ActionManager.Instance()->GetActionStatus(ActionType.Action, actionIdMin) == 0)
                     {
                         ActionManager.Instance()->UseAction(ActionType.Action, actionIdMin);
-                        TaskManager.EnqueueImmediate(() => Svc.ClientState.LocalPlayer.StatusList.Any(x => x.StatusId == statusId));
+                        TaskManager.Insert(() => Svc.ClientState.LocalPlayer.StatusList.Any(x => x.StatusId == statusId));
                     }
                     break;
             }
@@ -1072,14 +1072,14 @@ namespace PandorasBox.Features.Other
                     if (ActionManager.Instance()->GetActionStatus(ActionType.Action, actionIdBot) == 0)
                     {
                         ActionManager.Instance()->UseAction(ActionType.Action, actionIdBot);
-                        TaskManager.EnqueueImmediate(() => Svc.ClientState.LocalPlayer.StatusList.Any(x => x.StatusId == statusId));
+                        TaskManager.Insert(() => Svc.ClientState.LocalPlayer.StatusList.Any(x => x.StatusId == statusId));
                     }
                     break;
                 case 16:
                     if (ActionManager.Instance()->GetActionStatus(ActionType.Action, actionIdMin) == 0)
                     {
                         ActionManager.Instance()->UseAction(ActionType.Action, actionIdMin);
-                        TaskManager.EnqueueImmediate(() => Svc.ClientState.LocalPlayer.StatusList.Any(x => x.StatusId == statusId));
+                        TaskManager.Insert(() => Svc.ClientState.LocalPlayer.StatusList.Any(x => x.StatusId == statusId));
                     }
                     break;
             }
